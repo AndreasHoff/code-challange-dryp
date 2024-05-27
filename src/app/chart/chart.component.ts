@@ -8,11 +8,14 @@ import * as Highcharts from 'highcharts';
 })
 export class ChartComponent {
     Highcharts: typeof Highcharts = Highcharts;
+    outputMessage: string;
 
     @Input() timeseriesData: [number, number][] = [];
     @Input() downsample: boolean = false;
 
-    constructor() { }
+    constructor() {
+        this.outputMessage = '';
+    }
 
     chartInitialized(chart: Highcharts.Chart): void {
         const data: [number, number][] = !this.downsample
@@ -69,14 +72,36 @@ export class ChartComponent {
         const dataToDownsample: [number, number][] = [...this.timeseriesData];
         const plotWidth: number = 548;
 
-        // <-- Modify start
-        const downsampledData: [number, number][] = dataToDownsample;
-        // --> Modify end
+        const maxSizeOfPlots = Math.floor(dataToDownsample.length / plotWidth);
+        const downsampledData: [number, number][] = [];
+
+        let i = 0;
+        while (i < dataToDownsample.length) {
+            downsampledData.push(dataToDownsample[i]);
+
+            let maxYPoint = dataToDownsample[i];
+            for (let j = i + 1; j < i + maxSizeOfPlots && j < dataToDownsample.length; j++) {
+                if (dataToDownsample[j][1] > maxYPoint[1]) {
+                    maxYPoint = dataToDownsample[j];
+                }
+            }
+
+            if (maxYPoint !== dataToDownsample[i]) {
+                downsampledData.push(maxYPoint);
+            }
+
+            i += maxSizeOfPlots;
+            if (i >= dataToDownsample.length) {
+                downsampledData.push(dataToDownsample[dataToDownsample.length - 1]);
+                break;
+            }
+        }
 
         console.timeEnd('returnDownsampledData');
-        console.log(
-            `Input ${this.timeseriesData.length}, Output ${downsampledData.length}`
-        );
+
+        this.outputMessage = `Input ${this.timeseriesData.length}, Output ${downsampledData.length}`;
+        console.log(this.outputMessage);
+
         return downsampledData;
     }
 }
